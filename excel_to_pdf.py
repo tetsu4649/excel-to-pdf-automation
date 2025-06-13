@@ -138,7 +138,6 @@ class ExcelToWordPDFConverter:
             
             # タイトルを追加（最初の行をタイトルとして扱う）
             if data:
-                doc.add_heading('Excel Data Export', 0)
                 
                 # テーブル形式でデータを追加
                 if len(data) > 0:
@@ -173,29 +172,7 @@ class ExcelToWordPDFConverter:
             doc = SimpleDocTemplate(pdf_path, pagesize=A4)
             story = []
             
-            # タイトル
-            if self.text_only:
-                # テキストのみモード：シンプルなタイトル
-                title_style = ParagraphStyle(
-                    'CustomTitle',
-                    parent=self.styles['Heading1'],
-                    fontSize=14,
-                    textColor=colors.black,
-                    spaceAfter=20,
-                    alignment=TA_LEFT
-                )
-            else:
-                # 通常モード：装飾付きタイトル
-                title_style = ParagraphStyle(
-                    'CustomTitle',
-                    parent=self.styles['Heading1'],
-                    fontSize=16,
-                    textColor=colors.HexColor('#000080'),
-                    spaceAfter=30,
-                    alignment=TA_CENTER
-                )
-            story.append(Paragraph("Excel Data Export", title_style))
-            story.append(Spacer(1, 12))
+            # タイトルは追加しない（ユーザーリクエストにより削除）
             
             if data:
                 if self.text_only:
