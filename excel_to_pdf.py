@@ -36,9 +36,11 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 class ExcelToWordPDFConverter:
     """ExcelファイルをWord経由でPDFに変換するクラス"""
     
-    def __init__(self):
+    def __init__(self, text_only=False, selected_columns=None):
         self.styles = getSampleStyleSheet()
         self._setup_japanese_font()
+        self.text_only = text_only  # テキストのみのPDF出力モード
+        self.selected_columns = selected_columns or ['B']  # デフォルトはB列
     
     def _setup_japanese_font(self):
         """日本語フォントの設定（CIDフォントを使用）"""
@@ -81,9 +83,10 @@ class ExcelToWordPDFConverter:
             return []
     
     def read_excel(self, excel_path: str, sheet_name: str = None) -> List[List[str]]:
-        """Excelファイルからデータを読み取る"""
+        """Excelファイルからデータを読み取る（.xlsm対応、列選択対応）"""
         try:
-            workbook = load_workbook(excel_path, data_only=True)
+            # .xlsmファイルもサポート（マクロは無視される）
+            workbook = load_workbook(excel_path, data_only=True, keep_vba=False)
             if sheet_name:
                 if sheet_name in workbook.sheetnames:
                     sheet = workbook[sheet_name]
@@ -94,13 +97,32 @@ class ExcelToWordPDFConverter:
                 sheet = workbook.active
             
             data = []
-            for row in sheet.iter_rows():
-                row_data = []
-                for cell in row:
-                    value = cell.value if cell.value is not None else ""
-                    row_data.append(str(value))
-                if any(row_data):  # 空行でない場合のみ追加
-                    data.append(row_data)
+            
+            # 列選択が有効な場合
+            if self.selected_columns and self.selected_columns != ['ALL']:
+                # 選択された列のインデックスを計算
+                column_indices = []
+                for col_letter in self.selected_columns:
+                    col_idx = ord(col_letter.upper()) - ord('A')
+                    column_indices.append(col_idx)
+                
+                for row in sheet.iter_rows():
+                    row_data = []
+                    for idx, cell in enumerate(row):
+                        if idx in column_indices:
+                            value = cell.value if cell.value is not None else ""
+                            row_data.append(str(value))
+                    if any(row_data):  # 空行でない場合のみ追加
+                        data.append(row_data)
+            else:
+                # 全列を読み取る（従来の動作）
+                for row in sheet.iter_rows():
+                    row_data = []
+                    for cell in row:
+                        value = cell.value if cell.value is not None else ""
+                        row_data.append(str(value))
+                    if any(row_data):  # 空行でない場合のみ追加
+                        data.append(row_data)
             
             workbook.close()
             return data
@@ -152,49 +174,69 @@ class ExcelToWordPDFConverter:
             story = []
             
             # タイトル
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=self.styles['Heading1'],
-                fontSize=16,
-                textColor=colors.HexColor('#000080'),
-                spaceAfter=30,
-                alignment=TA_CENTER
-            )
+            if self.text_only:
+                # テキストのみモード：シンプルなタイトル
+                title_style = ParagraphStyle(
+                    'CustomTitle',
+                    parent=self.styles['Heading1'],
+                    fontSize=14,
+                    textColor=colors.black,
+                    spaceAfter=20,
+                    alignment=TA_LEFT
+                )
+            else:
+                # 通常モード：装飾付きタイトル
+                title_style = ParagraphStyle(
+                    'CustomTitle',
+                    parent=self.styles['Heading1'],
+                    fontSize=16,
+                    textColor=colors.HexColor('#000080'),
+                    spaceAfter=30,
+                    alignment=TA_CENTER
+                )
             story.append(Paragraph("Excel Data Export", title_style))
             story.append(Spacer(1, 12))
             
             if data:
-                # テーブル形式でデータを追加
-                table_data = []
-                for row in data:
-                    # 各セルをParagraphオブジェクトに変換（長いテキストの折り返し対応）
-                    table_row = []
-                    for cell in row:
-                        p = Paragraph(cell, self.japanese_style)
-                        table_row.append(p)
-                    # 不足している列を空文字で埋める
-                    max_cols = max(len(r) for r in data)
-                    while len(table_row) < max_cols:
-                        table_row.append(Paragraph("", self.japanese_style))
-                    table_data.append(table_row)
-                
-                # テーブルを作成
-                table = Table(table_data)
-                
-                # テーブルスタイルを設定
-                table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'HeiseiKakuGo-W5'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 12),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ]))
-                
-                story.append(table)
+                if self.text_only:
+                    # テキストのみモード：シンプルなレイアウト
+                    for row in data:
+                        text = "  ".join(row)  # セル間をスペースで区切る
+                        p = Paragraph(text, self.japanese_style)
+                        story.append(p)
+                        story.append(Spacer(1, 6))
+                else:
+                    # 通常モード：テーブル形式でデータを追加
+                    table_data = []
+                    for row in data:
+                        # 各セルをParagraphオブジェクトに変換（長いテキストの折り返し対応）
+                        table_row = []
+                        for cell in row:
+                            p = Paragraph(cell, self.japanese_style)
+                            table_row.append(p)
+                        # 不足している列を空文字で埋める
+                        max_cols = max(len(r) for r in data)
+                        while len(table_row) < max_cols:
+                            table_row.append(Paragraph("", self.japanese_style))
+                        table_data.append(table_row)
+                    
+                    # テーブルを作成
+                    table = Table(table_data)
+                    
+                    # テーブルスタイルを設定
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'HeiseiKakuGo-W5'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 12),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ]))
+                    
+                    story.append(table)
             
             # PDFを生成
             doc.build(story)
