@@ -18,13 +18,13 @@ class SimpleExcelToPDFGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Excel to PDF 変換ツール")
-        self.root.geometry("600x500")
+        self.root.geometry("650x650")
         self.root.resizable(False, False)
         
         # ファイルパス保存用
         self.excel_file = None
         self.output_dir = None
-        self.converter = ExcelToWordPDFConverter()
+        self.converter = None
         
         self.setup_ui()
         
@@ -42,7 +42,7 @@ class SimpleExcelToPDFGUI:
         file_frame = ttk.LabelFrame(main_frame, text="1. Excelファイルを選択", padding="10")
         file_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        self.file_label = ttk.Label(file_frame, text="ファイルが選択されていません", foreground="gray")
+        self.file_label = ttk.Label(file_frame, text="ファイルが選択されていません (.xlsx, .xls, .xlsm対応)", foreground="gray")
         self.file_label.grid(row=0, column=0, sticky=tk.W, padx=(0, 10))
         
         ttk.Button(file_frame, text="ファイルを選択", command=self.select_file).grid(row=0, column=1, sticky=tk.E)
@@ -64,49 +64,83 @@ class SimpleExcelToPDFGUI:
         
         ttk.Button(output_frame, text="フォルダを選択", command=self.select_output_dir).grid(row=0, column=1, sticky=tk.E)
         
+        # PDF出力設定セクション
+        pdf_frame = ttk.LabelFrame(main_frame, text="3. PDF出力設定", padding="10")
+        pdf_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        self.text_only_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(pdf_frame, text="テキストのみ（色やセル装飾なし）", 
+                       variable=self.text_only_var).grid(row=0, column=0, sticky=tk.W)
+        
         # シート選択セクション
-        sheet_frame = ttk.LabelFrame(main_frame, text="3. 変換するシートを選択", padding="10")
-        sheet_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        sheet_frame = ttk.LabelFrame(main_frame, text="4. 変換するシートを選択", padding="10")
+        sheet_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
         self.sheet_var = tk.StringVar(value="all")
         ttk.Radiobutton(sheet_frame, text="すべてのシートを変換", variable=self.sheet_var, 
-                       value="all").grid(row=0, column=0, sticky=tk.W)
+                       value="all", command=self.on_sheet_option_change).grid(row=0, column=0, sticky=tk.W)
         
         ttk.Radiobutton(sheet_frame, text="特定のシートを選択:", variable=self.sheet_var, 
-                       value="selected").grid(row=1, column=0, sticky=tk.W)
+                       value="selected", command=self.on_sheet_option_change).grid(row=1, column=0, sticky=tk.W)
         
         self.sheet_combo = ttk.Combobox(sheet_frame, state="disabled", width=30)
         self.sheet_combo.grid(row=1, column=1, padx=(10, 0))
         
-        # 変換設定で特定シート選択時にコンボボックスを有効化
-        self.sheet_var.trace('w', self.on_sheet_option_change)
+        # 列選択フレーム
+        column_frame = ttk.Frame(sheet_frame)
+        column_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        
+        ttk.Label(column_frame, text="列の選択:").grid(row=0, column=0, sticky=tk.W)
+        
+        self.column_var = tk.StringVar(value="B")
+        ttk.Radiobutton(column_frame, text="B列のみ（デフォルト）", variable=self.column_var,
+                       value="B").grid(row=0, column=1, padx=(10, 0))
+        ttk.Radiobutton(column_frame, text="すべての列", variable=self.column_var,
+                       value="ALL").grid(row=0, column=2, padx=(10, 0))
+        ttk.Radiobutton(column_frame, text="カスタム:", variable=self.column_var,
+                       value="custom").grid(row=0, column=3, padx=(10, 0))
+        
+        self.custom_columns_entry = ttk.Entry(column_frame, width=15)
+        self.custom_columns_entry.grid(row=0, column=4, padx=(5, 0))
+        self.custom_columns_entry.insert(0, "A,B,C")
+        
+        # 初期状態では列選択は無効
+        self.column_frame_widgets = column_frame.winfo_children()
+        for widget in self.column_frame_widgets:
+            widget.config(state="disabled")
         
         # 変換ボタン
         self.convert_button = ttk.Button(main_frame, text="変換開始", command=self.convert, 
                                         state="disabled", style="Accent.TButton")
-        self.convert_button.grid(row=4, column=0, columnspan=3, pady=(20, 10))
+        self.convert_button.grid(row=5, column=0, columnspan=3, pady=(20, 10))
         
         # プログレスバー
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate')
-        self.progress.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        self.progress.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         self.progress.grid_remove()  # 初期は非表示
         
         # ステータスラベル
         self.status_label = ttk.Label(main_frame, text="", foreground="green")
-        self.status_label.grid(row=6, column=0, columnspan=3)
+        self.status_label.grid(row=7, column=0, columnspan=3)
         
     def on_sheet_option_change(self, *args):
         """シート選択オプションが変更されたときの処理"""
         if self.sheet_var.get() == "selected":
             self.sheet_combo.config(state="readonly")
+            # 列選択も有効化
+            for widget in self.column_frame_widgets:
+                widget.config(state="normal")
         else:
             self.sheet_combo.config(state="disabled")
+            # 列選択も無効化
+            for widget in self.column_frame_widgets:
+                widget.config(state="disabled")
             
     def select_file(self):
         """ファイル選択ダイアログを表示"""
         filename = filedialog.askopenfilename(
             title="Excelファイルを選択",
-            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+            filetypes=[("Excel files", "*.xlsx *.xls *.xlsm"), ("All files", "*.*")]
         )
         
         if filename:
@@ -122,7 +156,8 @@ class SimpleExcelToPDFGUI:
         """選択されたExcelファイルからシート一覧を取得"""
         if self.excel_file:
             try:
-                sheets = self.converter.get_sheet_names(self.excel_file)
+                temp_converter = ExcelToWordPDFConverter()
+                sheets = temp_converter.get_sheet_names(self.excel_file)
                 self.sheet_combo['values'] = sheets
                 if sheets:
                     self.sheet_combo.current(0)
@@ -136,6 +171,24 @@ class SimpleExcelToPDFGUI:
         if dirname:
             self.output_dir = dirname
             self.output_label.config(text=dirname, foreground="black")
+    
+    def get_selected_columns(self):
+        """選択された列を取得"""
+        if self.sheet_var.get() == "all":
+            return ["ALL"]  # すべてのシートの場合は全列
+        
+        column_choice = self.column_var.get()
+        if column_choice == "B":
+            return ["B"]
+        elif column_choice == "ALL":
+            return ["ALL"]
+        elif column_choice == "custom":
+            custom = self.custom_columns_entry.get().strip()
+            if custom:
+                return [col.strip().upper() for col in custom.split(",") if col.strip()]
+            else:
+                return ["B"]  # デフォルト
+        return ["B"]
             
     def convert(self):
         """変換処理を実行"""
@@ -156,6 +209,12 @@ class SimpleExcelToPDFGUI:
     def do_convert(self):
         """実際の変換処理（別スレッド）"""
         try:
+            text_only = self.text_only_var.get()
+            selected_columns = self.get_selected_columns()
+            
+            # コンバーターを作成
+            self.converter = ExcelToWordPDFConverter(text_only=text_only, selected_columns=selected_columns)
+            
             if self.sheet_var.get() == "all":
                 # すべてのシートを変換
                 sheets = self.converter.get_sheet_names(self.excel_file)
@@ -222,6 +281,7 @@ def simple_cli_mode():
         # 対話形式でファイルパスを取得
         print("Excelファイルのパスを入力してください")
         print("（ヒント: ファイルをドラッグ&ドロップできます）")
+        print("サポート形式: .xlsx, .xls, .xlsm")
         excel_file = input("ファイルパス: ").strip('"').strip("'")
     
     # ファイルの存在確認
@@ -229,14 +289,46 @@ def simple_cli_mode():
         print(f"❌ エラー: ファイルが見つかりません: {excel_file}")
         return
     
+    # ファイル拡張子の確認
+    file_ext = Path(excel_file).suffix.lower()
+    if file_ext not in ['.xlsx', '.xls', '.xlsm']:
+        print(f"❌ エラー: サポートされていないファイル形式です: {file_ext}")
+        print("サポートされている形式: .xlsx, .xls, .xlsm")
+        return
+    
     try:
-        converter = ExcelToWordPDFConverter()
+        # PDF出力モードを選択
+        print("\nPDF出力モード:")
+        print("1. テキストのみ（シンプル・デフォルト）")
+        print("2. 通常（セルの色や罫線を含む）")
+        mode_choice = input("選択 (1-2) [デフォルト: 1]: ").strip()
+        text_only = mode_choice != "2"
+        
+        converter = ExcelToWordPDFConverter(text_only=text_only)
         
         # シート一覧を取得
         sheets = converter.get_sheet_names(excel_file)
         
         if len(sheets) == 1:
-            # シートが1つだけの場合は自動的に変換
+            # シートが1つだけの場合は列選択を確認
+            print(f"\nシート: {sheets[0]}")
+            print("\n列の選択:")
+            print("1. B列のみ（デフォルト）")
+            print("2. すべての列")
+            print("3. カスタム")
+            col_choice = input("選択 (1-3) [デフォルト: 1]: ").strip()
+            
+            if col_choice == "2":
+                selected_columns = ["ALL"]
+            elif col_choice == "3":
+                custom = input("列を入力（カンマ区切り、例: A,B,D）: ").strip()
+                selected_columns = [col.strip().upper() for col in custom.split(",") if col.strip()] or ["B"]
+            else:
+                selected_columns = ["B"]
+            
+            # コンバーターを再作成
+            converter = ExcelToWordPDFConverter(text_only=text_only, selected_columns=selected_columns)
+            
             print(f"\n🔄 変換中: {sheets[0]}")
             word_path, pdf_path = converter.convert(excel_file, None, sheets[0])
             print(f"\n✅ 変換完了!")
@@ -265,6 +357,25 @@ def simple_cli_mode():
                         num = int(input("番号: "))
                         if 1 <= num <= len(sheets):
                             selected_sheet = sheets[num - 1]
+                            
+                            # 列選択
+                            print("\n列の選択:")
+                            print("1. B列のみ（デフォルト）")
+                            print("2. すべての列")
+                            print("3. カスタム")
+                            col_choice = input("選択 (1-3) [デフォルト: 1]: ").strip()
+                            
+                            if col_choice == "2":
+                                selected_columns = ["ALL"]
+                            elif col_choice == "3":
+                                custom = input("列を入力（カンマ区切り、例: A,B,D）: ").strip()
+                                selected_columns = [col.strip().upper() for col in custom.split(",") if col.strip()] or ["B"]
+                            else:
+                                selected_columns = ["B"]
+                            
+                            # コンバーターを再作成
+                            converter = ExcelToWordPDFConverter(text_only=text_only, selected_columns=selected_columns)
+                            
                             print(f"\n🔄 変換中: {selected_sheet}")
                             word_path, pdf_path = converter.convert(excel_file, None, selected_sheet)
                             print(f"\n✅ 変換完了!")
@@ -291,8 +402,13 @@ def main():
         print("\n使い方:")
         print("  python easy_converter.py              # 対話形式で変換")
         print("  python easy_converter.py file.xlsx    # 指定ファイルを変換") 
+        print("  python easy_converter.py file.xlsm    # .xlsmファイルも対応")
         print("  python easy_converter.py --gui        # GUIモードで起動")
         print("  python easy_converter.py --help       # このヘルプを表示")
+        print("\n機能:")
+        print("  • .xlsx, .xls, .xlsm ファイルに対応")
+        print("  • テキストのみのPDF出力（色やセル装飾なし）")
+        print("  • 列選択機能（デフォルトはB列）")
     else:
         # デフォルトはCLIモード
         try:

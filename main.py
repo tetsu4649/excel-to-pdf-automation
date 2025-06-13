@@ -38,6 +38,60 @@ def select_sheet_interactive(sheets):
             sys.exit(0)
 
 
+def select_columns_interactive():
+    """対話形式で列を選択する"""
+    print("\n列の選択:")
+    print("-" * 40)
+    print("1. B列のみ（デフォルト）")
+    print("2. 特定の列を選択")
+    print("3. すべての列")
+    print("-" * 40)
+    
+    while True:
+        try:
+            choice = input("選択してください (1-3) [デフォルト: 1]: ").strip()
+            
+            if choice == "" or choice == "1":
+                return ["B"]
+            elif choice == "2":
+                columns = input("列を入力してください（カンマ区切り、例: A,B,D）: ").strip()
+                if columns:
+                    # 列文字をリストに変換し、大文字に統一
+                    return [col.strip().upper() for col in columns.split(",") if col.strip()]
+                else:
+                    print("❌ 列を入力してください。")
+            elif choice == "3":
+                return ["ALL"]
+            else:
+                print("❌ 1から3の範囲で入力してください。")
+        except KeyboardInterrupt:
+            print("\n\n処理を中断しました。")
+            sys.exit(0)
+
+
+def select_output_mode():
+    """出力モードを選択する"""
+    print("\nPDF出力モード:")
+    print("-" * 40)
+    print("1. 通常（セルの色や罫線を含む）")
+    print("2. テキストのみ（シンプルな表示）")
+    print("-" * 40)
+    
+    while True:
+        try:
+            choice = input("選択してください (1-2) [デフォルト: 2]: ").strip()
+            
+            if choice == "" or choice == "2":
+                return True  # text_only = True
+            elif choice == "1":
+                return False  # text_only = False
+            else:
+                print("❌ 1から2の範囲で入力してください。")
+        except KeyboardInterrupt:
+            print("\n\n処理を中断しました。")
+            sys.exit(0)
+
+
 def main():
     """メインエントリーポイント"""
     print("Excel to PDF 自動化ツール")
@@ -48,7 +102,9 @@ def main():
         print("使い方: python main.py <Excelファイル> [出力ディレクトリ]")
         print("例: python main.py sample.xlsx")
         print("例: python main.py sample.xlsx ./output")
+        print("例: python main.py sample.xlsm")  # .xlsmもサポート
         print("\nヒント: ターミナルにExcelファイルをドラッグ&ドロップできます!")
+        print("\nサポートされている形式: .xlsx, .xls, .xlsm")
         sys.exit(1)
     
     # ファイルパスを取得（引用符を削除）
@@ -60,9 +116,19 @@ def main():
         print(f"エラー: Excelファイルが見つかりません: {excel_file}")
         sys.exit(1)
     
+    # ファイル拡張子の確認
+    file_ext = Path(excel_file).suffix.lower()
+    if file_ext not in ['.xlsx', '.xls', '.xlsm']:
+        print(f"エラー: サポートされていないファイル形式です: {file_ext}")
+        print("サポートされている形式: .xlsx, .xls, .xlsm")
+        sys.exit(1)
+    
     try:
-        # コンバーターを初期化
-        converter = ExcelToWordPDFConverter()
+        # 出力モードを選択
+        text_only = select_output_mode()
+        
+        # コンバーターを初期化（まず列選択なしで）
+        converter = ExcelToWordPDFConverter(text_only=text_only)
         
         # シート一覧を取得
         sheets = converter.get_sheet_names(excel_file)
@@ -73,6 +139,12 @@ def main():
         
         # 対話形式でシートを選択
         selected_sheet = select_sheet_interactive(sheets)
+        
+        # シートが選択された場合は列選択も行う
+        if selected_sheet is not None:
+            selected_columns = select_columns_interactive()
+            # コンバーターを再初期化（列選択を含む）
+            converter = ExcelToWordPDFConverter(text_only=text_only, selected_columns=selected_columns)
         
         if selected_sheet is None:
             # すべてのシートを変換
@@ -86,6 +158,8 @@ def main():
         else:
             # 選択されたシートのみを変換
             print(f"\n処理中: {excel_file} - シート: {selected_sheet}")
+            if converter.selected_columns != ["ALL"]:
+                print(f"選択された列: {', '.join(converter.selected_columns)}")
             word_path, pdf_path = converter.convert(excel_file, output_dir, selected_sheet)
             
             print("\n✅ 変換が完了しました!")
@@ -98,4 +172,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

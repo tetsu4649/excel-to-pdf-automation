@@ -8,12 +8,14 @@ ExcelファイルをWord経由でPDF形式に変換するPythonベースの自�
 
 ## 機能
 
-- Excelファイル（.xlsx、.xls）の内容を読み取り
+- Excelファイル（.xlsx、.xls、**NEW! .xlsm**）の内容を読み取り
 - WordドキュメントへのExcelデータの転送（テーブル形式）
 - Word経由でPDF形式に変換
 - バッチ処理機能
 - コマンドラインインターフェース
-- **NEW!** 簡単なGUIインターフェース（ドラッグ&ドロップ対応）
+- 簡単なGUIインターフェース（ドラッグ&ドロップ対応）
+- **NEW!** テキストのみのPDF出力（色やセル装飾なし）
+- **NEW!** 列選択機能（デフォルトはB列）
 
 ## インストール
 
@@ -41,6 +43,12 @@ python easy_converter.py --gui
 python easy_converter.py
 ```
 
+GUIモードでは以下の設定が可能です：
+- ファイル選択（.xlsx、.xls、.xlsm対応）
+- PDF出力モード（テキストのみ or 通常）
+- シート選択（すべて or 特定のシート）
+- 列選択（B列のみ、すべて、カスタム）
+
 #### シンプルCLIモード
 ```bash
 # 対話形式で変換（ファイルパスを聞かれます）
@@ -48,6 +56,9 @@ python easy_converter.py
 
 # ファイルを直接指定して変換
 python easy_converter.py sample.xlsx
+
+# .xlsmファイルも対応
+python easy_converter.py sample.xlsm
 ```
 
 💡 **ヒント**: ターミナルにExcelファイルをドラッグ&ドロップできます！
@@ -88,6 +99,7 @@ excel-to-pdf-automation/
 ├── excel_to_pdf.py        # Excel→Word→PDF変換の核となるモジュール
 ├── create_sample_excel.py  # サンプルExcelファイル作成スクリプト
 ├── test_conversion.py      # 変換機能のテストスクリプト
+├── test_new_features.py    # 🆕 新機能のテストスクリプト
 ├── requirements.txt        # Python依存関係
 └── README.md              # このファイル
 ```
@@ -96,7 +108,7 @@ excel-to-pdf-automation/
 
 - Python 3.7以上
 - 必要なPythonパッケージ:
-  - openpyxl==3.1.2 (Excel操作用)
+  - openpyxl==3.1.2 (Excel操作用、.xlsx/.xls/.xlsm対応)
   - python-docx==1.1.0 (Word文書作成用)
   - reportlab==4.1.0 (PDF生成用)
   - Pillow==10.3.0 (画像処理用)
