@@ -13,6 +13,7 @@ ExcelファイルをWord経由でPDF形式に変換するPythonベースの自�
 - Word経由でPDF形式に変換
 - バッチ処理機能
 - コマンドラインインターフェース
+- **NEW!** 簡単なGUIインターフェース（ドラッグ&ドロップ対応）
 
 ## インストール
 
@@ -29,7 +30,29 @@ pip install -r requirements.txt
 
 ## 使い方
 
-### 基本的な使い方
+### 🆕 簡単な使い方（推奨）
+
+#### GUIモード（一番簡単！）
+```bash
+# GUIインターフェースを起動
+python easy_converter.py --gui
+
+# または引数なしで実行（自動的にGUIが起動）
+python easy_converter.py
+```
+
+#### シンプルCLIモード
+```bash
+# 対話形式で変換（ファイルパスを聞かれます）
+python easy_converter.py
+
+# ファイルを直接指定して変換
+python easy_converter.py sample.xlsx
+```
+
+💡 **ヒント**: ターミナルにExcelファイルをドラッグ&ドロップできます！
+
+### 従来の使い方
 
 ```bash
 # Excelファイルを指定して変換
@@ -60,6 +83,7 @@ python test_conversion.py
 
 ```
 excel-to-pdf-automation/
+├── easy_converter.py       # 🆕 簡単な変換ツール（GUI/CLI両対応）
 ├── main.py                 # メインエントリーポイント
 ├── excel_to_pdf.py        # Excel→Word→PDF変換の核となるモジュール
 ├── create_sample_excel.py  # サンプルExcelファイル作成スクリプト
