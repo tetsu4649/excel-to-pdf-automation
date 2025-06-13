@@ -69,11 +69,29 @@ class ExcelToWordPDFConverter:
             except:
                 self.japanese_style = self.styles['Normal']
     
-    def read_excel(self, excel_path: str) -> List[List[str]]:
+    def get_sheet_names(self, excel_path: str) -> List[str]:
+        """Excelファイルからシート名のリストを取得する"""
+        try:
+            workbook = load_workbook(excel_path, data_only=True)
+            sheet_names = workbook.sheetnames
+            workbook.close()
+            return sheet_names
+        except Exception as e:
+            print(f"Error listing sheets: {e}")
+            return []
+    
+    def read_excel(self, excel_path: str, sheet_name: str = None) -> List[List[str]]:
         """Excelファイルからデータを読み取る"""
         try:
             workbook = load_workbook(excel_path, data_only=True)
-            sheet = workbook.active
+            if sheet_name:
+                if sheet_name in workbook.sheetnames:
+                    sheet = workbook[sheet_name]
+                else:
+                    print(f"Warning: Sheet '{sheet_name}' not found. Using active sheet.")
+                    sheet = workbook.active
+            else:
+                sheet = workbook.active
             
             data = []
             for row in sheet.iter_rows():
@@ -186,7 +204,7 @@ class ExcelToWordPDFConverter:
             print(f"PDF作成エラー: {e}")
             raise
     
-    def convert(self, excel_path: str, output_dir: str = None):
+    def convert(self, excel_path: str, output_dir: str = None, sheet_name: str = None):
         """ExcelファイルをWordとPDFに変換する"""
         # パスの設定
         excel_path = Path(excel_path)
@@ -199,16 +217,20 @@ class ExcelToWordPDFConverter:
             output_dir = Path(output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
         
-        # 出力ファイル名の設定
+        # 出力ファイル名の設定（シート名を含める）
         base_name = excel_path.stem
+        if sheet_name:
+            base_name = f"{base_name}_{sheet_name}"
         word_path = output_dir / f"{base_name}.docx"
         pdf_path = output_dir / f"{base_name}.pdf"
         
         # 処理の実行
         print(f"Excelファイルを処理中: {excel_path}")
+        if sheet_name:
+            print(f"対象シート: {sheet_name}")
         
         # Excelデータを読み取る
-        data = self.read_excel(str(excel_path))
+        data = self.read_excel(str(excel_path), sheet_name)
         
         # Wordドキュメントを作成
         self.create_word_document(data, str(word_path))
