@@ -48,10 +48,12 @@ def main():
         print("使い方: python main.py <Excelファイル> [出力ディレクトリ]")
         print("例: python main.py sample.xlsx")
         print("例: python main.py sample.xlsx ./output")
+        print("\nヒント: ターミナルにExcelファイルをドラッグ&ドロップできます!")
         sys.exit(1)
     
-    excel_file = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else None
+    # ファイルパスを取得（引用符を削除）
+    excel_file = sys.argv[1].strip('"').strip("'")
+    output_dir = sys.argv[2].strip('"').strip("'") if len(sys.argv) > 2 else None
     
     # ファイルの存在確認
     if not Path(excel_file).exists():
