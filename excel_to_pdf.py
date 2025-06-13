@@ -25,6 +25,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -40,19 +41,33 @@ class ExcelToWordPDFConverter:
         self._setup_japanese_font()
     
     def _setup_japanese_font(self):
-        """日本語フォントの設定（システムフォントを使用）"""
+        """日本語フォントの設定（CIDフォントを使用）"""
         try:
+            # 日本語CIDフォントを登録
+            pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+            
             # 日本語フォントのスタイルを作成
             self.japanese_style = ParagraphStyle(
                 'Japanese',
                 parent=self.styles['Normal'],
-                fontName='Helvetica',
+                fontName='HeiseiKakuGo-W5',
                 fontSize=10,
                 leading=12,
             )
         except Exception as e:
             print(f"フォント設定エラー: {e}")
-            self.japanese_style = self.styles['Normal']
+            # フォールバックとして別のCIDフォントを試す
+            try:
+                pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
+                self.japanese_style = ParagraphStyle(
+                    'Japanese',
+                    parent=self.styles['Normal'],
+                    fontName='HeiseiMin-W3',
+                    fontSize=10,
+                    leading=12,
+                )
+            except:
+                self.japanese_style = self.styles['Normal']
     
     def read_excel(self, excel_path: str) -> List[List[str]]:
         """Excelファイルからデータを読み取る"""
@@ -153,7 +168,7 @@ class ExcelToWordPDFConverter:
                     ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'HeiseiKakuGo-W5'),
                     ('FONTSIZE', (0, 0), (-1, 0), 12),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
