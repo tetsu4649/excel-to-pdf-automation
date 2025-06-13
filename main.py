@@ -20,10 +20,18 @@ def select_sheet_interactive(sheets):
     print(f"{len(sheets) + 1}. すべてのシートを変換")
     print("-" * 40)
     
+    # デフォルトを特定のシート選択（最初のシート）に設定
+    default_choice = 1
+    
     while True:
         try:
-            choice = input(f"シートを選択してください (1-{len(sheets) + 1}): ")
-            choice_num = int(choice)
+            choice = input(f"シートを選択してください (1-{len(sheets) + 1}) [デフォルト: {default_choice}]: ").strip()
+            
+            # Enterキーのみの場合はデフォルト選択
+            if choice == "":
+                choice_num = default_choice
+            else:
+                choice_num = int(choice)
             
             if 1 <= choice_num <= len(sheets):
                 return sheets[choice_num - 1]
@@ -109,7 +117,9 @@ def main():
     
     # ファイルパスを取得（引用符を削除）
     excel_file = sys.argv[1].strip('"').strip("'")
-    output_dir = sys.argv[2].strip('"').strip("'") if len(sys.argv) > 2 else None
+    # デフォルトの出力先を設定
+    default_output_path = r"C:\Users\Owner\Documents\パトレオン用\PDF"
+    output_dir = sys.argv[2].strip('"').strip("'") if len(sys.argv) > 2 else default_output_path
     
     # ファイルの存在確認
     if not Path(excel_file).exists():
