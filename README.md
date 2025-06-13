@@ -1,45 +1,45 @@
-# Excel to PDF Automation
+# Excel to PDF 自動化ツール
 
-A Python-based automation tool for converting Excel files to PDF format.
+ExcelファイルをPDF形式に変換するPythonベースの自動化ツールです。
 
-## Description
+## 説明
 
-This project provides an automated solution for converting Excel spreadsheets to PDF documents. It's designed to streamline the process of generating PDF reports from Excel data.
+このプロジェクトは、ExcelスプレッドシートをPDFドキュメントに変換する自動化ソリューションを提供します。ExcelデータからPDFレポートを生成するプロセスを効率化するために設計されています。
 
-## Features
+## 機能
 
-- Convert Excel files (.xlsx, .xls) to PDF format
-- Batch processing capabilities
-- Automated workflow for regular conversions
+- Excelファイル（.xlsx、.xls）をPDF形式に変換
+- バッチ処理機能
+- 定期的な変換のための自動化ワークフロー
 
-## Installation
+## インストール
 
 ```bash
-# Clone the repository
+# リポジトリをクローン
 git clone https://github.com/tetsu4649/excel-to-pdf-automation.git
 
-# Navigate to the project directory
+# プロジェクトディレクトリに移動
 cd excel-to-pdf-automation
 
-# Install required dependencies (to be added)
+# 必要な依存関係をインストール（追加予定）
 # pip install -r requirements.txt
 ```
 
-## Usage
+## 使い方
 
 ```bash
 python main.py
 ```
 
-## Requirements
+## 必要条件
 
 - Python 3.x
-- Additional dependencies to be specified
+- その他の依存関係は後日指定予定
 
-## Contributing
+## コントリビューション
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+貢献を歓迎します！お気軽にプルリクエストを送信してください。
 
-## License
+## ライセンス
 
-This project is licensed under the terms specified by the repository owner. 
+このプロジェクトは、リポジトリオーナーが指定する条件に基づいてライセンスされています。
