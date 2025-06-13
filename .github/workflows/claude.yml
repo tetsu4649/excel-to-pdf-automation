@@ -9,11 +9,17 @@ jobs:
     # Issueのコメントに「@claude」が含まれている場合のみ実行する
     if: contains(github.event.comment.body, '@claude')
     runs-on: ubuntu-latest
+
+    # 【最重要】このブロックを追加します。これが今回の全てです。
     permissions:
-      contents: write
-      pull-requests: write
+      # Claudeが身分証明書（OIDCトークン）を発行することを許可する[1][2][5]
+      id-token: write 
+      # ClaudeがIssueやPull Requestにコメントを書き込むことを許可する
       issues: write
+      pull-requests: write
+      # Claudeがリポジトリのコードを読み書きすることを許可する[3]
+      contents: write
+
     steps:
       - name: Run Claude
-        # 【重要】公式の、対話機能を持つActionを指定します
         uses: anthropics/claude-code-action@beta
