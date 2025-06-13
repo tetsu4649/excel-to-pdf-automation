@@ -231,10 +231,14 @@ class ExcelToWordPDFConverter:
             raise FileNotFoundError(f"Excelファイルが見つかりません: {excel_path}")
         
         if output_dir is None:
-            output_dir = excel_path.parent
+            # デフォルトの出力先を設定
+            default_output_path = r"C:\Users\Owner\Documents\パトレオン用\PDF"
+            output_dir = Path(default_output_path)
         else:
             output_dir = Path(output_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 出力ディレクトリが存在しない場合は作成
+        output_dir.mkdir(parents=True, exist_ok=True)
         
         # 出力ファイル名の設定（シート名を含める）
         base_name = excel_path.stem

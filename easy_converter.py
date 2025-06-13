@@ -23,7 +23,8 @@ class SimpleExcelToPDFGUI:
         
         # ファイルパス保存用
         self.excel_file = None
-        self.output_dir = None
+        # デフォルトの出力先を設定
+        self.output_dir = r"C:\Users\Owner\Documents\パトレオン用\PDF"
         self.converter = None
         
         self.setup_ui()
@@ -59,7 +60,7 @@ class SimpleExcelToPDFGUI:
         output_frame = ttk.LabelFrame(main_frame, text="2. 出力先を選択（オプション）", padding="10")
         output_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        self.output_label = ttk.Label(output_frame, text="元のファイルと同じフォルダに保存", foreground="gray")
+        self.output_label = ttk.Label(output_frame, text=self.output_dir, foreground="black")
         self.output_label.grid(row=0, column=0, sticky=tk.W, padx=(0, 10))
         
         ttk.Button(output_frame, text="フォルダを選択", command=self.select_output_dir).grid(row=0, column=1, sticky=tk.E)
@@ -76,14 +77,16 @@ class SimpleExcelToPDFGUI:
         sheet_frame = ttk.LabelFrame(main_frame, text="4. 変換するシートを選択", padding="10")
         sheet_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        self.sheet_var = tk.StringVar(value="all")
+        # デフォルトを特定のシート選択に設定
+        self.sheet_var = tk.StringVar(value="selected")
         ttk.Radiobutton(sheet_frame, text="すべてのシートを変換", variable=self.sheet_var, 
                        value="all", command=self.on_sheet_option_change).grid(row=0, column=0, sticky=tk.W)
         
         ttk.Radiobutton(sheet_frame, text="特定のシートを選択:", variable=self.sheet_var, 
                        value="selected", command=self.on_sheet_option_change).grid(row=1, column=0, sticky=tk.W)
         
-        self.sheet_combo = ttk.Combobox(sheet_frame, state="disabled", width=30)
+        # デフォルトで特定のシート選択が有効なので、state="readonly"に設定
+        self.sheet_combo = ttk.Combobox(sheet_frame, state="readonly", width=30)
         self.sheet_combo.grid(row=1, column=1, padx=(10, 0))
         
         # 列選択フレーム
@@ -104,10 +107,8 @@ class SimpleExcelToPDFGUI:
         self.custom_columns_entry.grid(row=0, column=4, padx=(5, 0))
         self.custom_columns_entry.insert(0, "A,B,C")
         
-        # 初期状態では列選択は無効
+        # デフォルトで特定のシート選択が有効なので、列選択も有効にする
         self.column_frame_widgets = column_frame.winfo_children()
-        for widget in self.column_frame_widgets:
-            widget.config(state="disabled")
         
         # 変換ボタン
         self.convert_button = ttk.Button(main_frame, text="変換開始", command=self.convert, 
